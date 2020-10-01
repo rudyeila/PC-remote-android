@@ -14,6 +14,7 @@ import com.android.volley.Response
 import com.android.volley.VolleyError
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.example.pc_remote_android.networking.HTTPClient
 import com.example.pc_remote_android.ui.main.SectionsPagerAdapter
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
@@ -24,43 +25,15 @@ import org.json.JSONObject
 import java.io.UnsupportedEncodingException
 import kotlin.math.roundToInt
 
-
-class CustomErrorListener : Response.ErrorListener {
-
-    private fun parseVolleyError(error: VolleyError) {
-        try {
-            Log.d("parseVolleyError", error.toString())
-            val responseBody = String(error.networkResponse.data, Charsets.UTF_8)
-            val data = JSONObject(responseBody)
-            val errors = data.getJSONArray("errors")
-            val jsonMessage = errors.getJSONObject(0)
-            val message = jsonMessage.getString("message")
-            Log.d("getErrorResponse", message)
-//            textViewError.text = message
-        } catch (e: JSONException) {
-        } catch (error: UnsupportedEncodingException) {
-        }
-    }
-
-
-    override fun onErrorResponse(error: VolleyError?) {
-        if (error == null) {
-            Log.d("onErrorResponse", "error is null...")
-        } else {
-            parseVolleyError(error);
-        }
-    }
-
-}
-
-
 class MainActivity : AppCompatActivity() {
     private val baseUrl = "http://192.168.178.23/"
     private lateinit var queue: RequestQueue
+    private lateinit var httpClient: HTTPClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         queue = Volley.newRequestQueue(this)
+        httpClient = HTTPClient(this.baseUrl, this.queue)
         setContentView(R.layout.activity_main)
         val sectionsPagerAdapter = SectionsPagerAdapter(this, supportFragmentManager)
         // val viewPager: ViewPager = findViewById(R.id.view_pager)
@@ -164,11 +137,7 @@ class MainActivity : AppCompatActivity() {
         val resourceUrl = "system/volume/level"
         val url: String = this.baseUrl.plus(resourceUrl)
         Log.d("getVolume URL: ", url)
-        val getRequest = JsonObjectRequest(
-            Request.Method.GET,
-            url,
-            null,
-            { response -> // display response
+        this.httpClient.get(resourceUrl, { response -> // display response
                 Log.d("Response", response.toString())
                 try {
                     val volumeValue: Int = (response.getDouble("volume") * 100).toInt()
@@ -176,12 +145,7 @@ class MainActivity : AppCompatActivity() {
                 } catch (err: Exception) {
                     TODO("No implemented yet")
                 }
-            }, CustomErrorListener()
-        )
-
-
-        // add it to the RequestQueue
-        queue.add(getRequest)
+            }, this.CustomErrorListener())
     }
 
     private fun setVolume(newVolume: Int) {
@@ -189,24 +153,45 @@ class MainActivity : AppCompatActivity() {
         val url: String = this.baseUrl.plus(resourceUrl)
         Log.d("setVolume URL: ", url)
 
-        val postRequest = JsonObjectRequest(
-            Request.Method.POST,
-            url,
-            JSONObject().put("volume", (newVolume / 100.0)),
-            { response -> // display response
-                Log.d("Response", response.toString())
-//                try {
-//                    val volumeValue: Int = (response.getDouble("volume") * 100).toInt()
-//                    this.setSeekBarValue(volumeValue)
-//                } catch (err: Exception) {
-//                    TODO("No implemented yet")
-//                }
-            }, CustomErrorListener()
-        )
+        val jsonBody = JSONObject()
+        jsonBody.put("volume", (newVolume / 100.0))
 
-        // add it to the RequestQueue
-        queue.add(postRequest)
+        this.httpClient.post(resourceUrl, jsonBody, null, CustomErrorListener())
     }
 
 
+
+    inner class CustomErrorListener : Response.ErrorListener {
+        /** This listener handles the HTTP errors in the context of the main activity */
+        private fun parseVolleyError(error: VolleyError) {
+            try {
+                Log.d("parseVolleyError", error.toString())
+                val responseBody = String(error.networkResponse.data, Charsets.UTF_8)
+                val data = JSONObject(responseBody)
+                val errors = data.getJSONArray("errors")
+                val jsonMessage = errors.getJSONObject(0)
+                val message = jsonMessage.getString("message")
+                Log.e("getErrorResponse", message)
+                textViewError.text = message
+            } catch (e: JSONException) {
+                Log.e("getErrorResponse", "JSONException".plus(e.toString()))
+                textViewError.text = e.toString()
+            } catch (error: UnsupportedEncodingException) {
+                Log.e("getErrorResponse", "UnsupportedEncodingException".plus(error.toString()))
+                textViewError.text = error.toString()
+            } catch (err: java.lang.Exception) {
+                Log.e("getErrorResponse", err.toString())
+                textViewError.text = err.toString()
+            }
+        }
+
+        override fun onErrorResponse(error: VolleyError?) {
+            if (error == null) {
+                Log.d("onErrorResponse", "error is null...")
+            } else {
+                parseVolleyError(error);
+            }
+        }
+
+    }
 }
