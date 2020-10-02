@@ -36,6 +36,7 @@
             android:padding="@dimen/appbar_padding"
             android:text="@string/app_name"
             android:textAppearance="@style/TextAppearance.Widget.AppCompat.Toolbar.Title" />
+
     </androidx.viewpager.widget.ViewPager>
 
     <TextView
@@ -73,11 +74,21 @@
     <TextView
         android:id="@+id/textViewError"
         android:layout_width="wrap_content"
-        android:layout_height="14dp"
-        android:text="Error Message"
+        android:layout_height="wrap_content"
+        android:textColor="#F44336"
         app:layout_constraintBottom_toTopOf="@+id/textViewVolume"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
+
+    <Switch
+        android:id="@+id/muteSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mute"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seekBarVolume" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

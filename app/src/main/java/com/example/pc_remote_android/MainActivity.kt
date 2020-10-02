@@ -6,14 +6,12 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.SeekBar
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.VolleyError
-import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.example.pc_remote_android.models.VolumeViewModel
 import com.example.pc_remote_android.networking.HTTPClient
 import com.example.pc_remote_android.ui.main.SectionsPagerAdapter
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -23,17 +21,34 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.UnsupportedEncodingException
-import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
     private val baseUrl = "http://192.168.178.23/"
     private lateinit var queue: RequestQueue
     private lateinit var httpClient: HTTPClient
+    private lateinit var volumeViewModel: VolumeViewModel
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         queue = Volley.newRequestQueue(this)
         httpClient = HTTPClient(this.baseUrl, this.queue)
+//        volumeController = VolumeController(httpClient, volumeModel, CustomErrorListener())
+//        volumeController.sync()
+        volumeViewModel = VolumeViewModel(httpClient, CustomErrorListener())
+
+        volumeViewModel.getCurrentVolume().observe(this, { newVolume: Int ->
+            Log.d("volumeObserver", "newVolume: ".plus(newVolume))
+            seekBarVolume.progress = newVolume
+            textViewVolume.text = newVolume.toString()
+        })
+
+        volumeViewModel.getCurrentMute().observe(this, { newMute: Boolean ->
+            muteSwitch.isChecked = newMute
+        })
+
         setContentView(R.layout.activity_main)
         val sectionsPagerAdapter = SectionsPagerAdapter(this, supportFragmentManager)
         // val viewPager: ViewPager = findViewById(R.id.view_pager)
@@ -47,24 +62,28 @@ class MainActivity : AppCompatActivity() {
                 .setAction("Action", null).show()
         }
 
-        // handle seekbar change
-        val seekBarVolume = findViewById<SeekBar>(R.id.seekBarVolume)
+        muteSwitch.setOnCheckedChangeListener { _, isChecked ->  volumeViewModel.setMute(isChecked)}
+
         seekBarVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            private var isTracking: Boolean = false
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                textViewVolume.text = progress.toString()
-                setVolume(progress)
+//                textViewVolume.text = progress.toString()
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isTracking = true
                 return
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                isTracking = false
+                if (seekBar != null) {
+                    volumeViewModel.setVolume(seekBar.progress)
+                }
                 return
             }
         })
 
-        this.getVolume()
     }
 
 
@@ -73,11 +92,11 @@ class MainActivity : AppCompatActivity() {
 
         return when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                this.changeSeekBarValue(true)
+                volumeViewModel.increaseVolume()
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                this.changeSeekBarValue(false)
+                volumeViewModel.decreaseVolume()
                 true
             }
             else -> super.onKeyUp(keyCode, event)
@@ -113,52 +132,6 @@ class MainActivity : AppCompatActivity() {
         // Update seekbar value
         seekBarVolume.progress = newVolume
     }
-
-    private fun changeSeekBarValue(increase: Boolean, offset: Int = 10, tensOnly: Boolean = true) {
-        var oldValue = this.getCurrentSeekBarValue()
-
-        // round to nearest 10
-        if (tensOnly) {
-            oldValue = (oldValue / 10.0).roundToInt() * 10
-        }
-
-        var newValue: Int
-        if (increase) {
-            newValue = oldValue + offset
-        } else {
-            newValue = oldValue - offset
-        }
-
-        // set new value
-        this.setSeekBarValue(newValue)
-    }
-
-    private fun getVolume() {
-        val resourceUrl = "system/volume/level"
-        val url: String = this.baseUrl.plus(resourceUrl)
-        Log.d("getVolume URL: ", url)
-        this.httpClient.get(resourceUrl, { response -> // display response
-                Log.d("Response", response.toString())
-                try {
-                    val volumeValue: Int = (response.getDouble("volume") * 100).toInt()
-                    this.setSeekBarValue(volumeValue)
-                } catch (err: Exception) {
-                    TODO("No implemented yet")
-                }
-            }, this.CustomErrorListener())
-    }
-
-    private fun setVolume(newVolume: Int) {
-        val resourceUrl = "system/volume/level"
-        val url: String = this.baseUrl.plus(resourceUrl)
-        Log.d("setVolume URL: ", url)
-
-        val jsonBody = JSONObject()
-        jsonBody.put("volume", (newVolume / 100.0))
-
-        this.httpClient.post(resourceUrl, jsonBody, null, CustomErrorListener())
-    }
-
 
 
     inner class CustomErrorListener : Response.ErrorListener {
