@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.viewpager.widget.ViewPager
 import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.VolleyError
@@ -32,13 +33,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // GUI setup
+        setContentView(R.layout.activity_main)
+        val sectionsPagerAdapter = SectionsPagerAdapter(this, supportFragmentManager)
+        val viewPager: ViewPager = findViewById(R.id.view_pager)
+        viewPager.adapter = sectionsPagerAdapter
+        val tabs: TabLayout = findViewById(R.id.tabs)
+        tabs.setupWithViewPager(viewPager)
+        val fab: FloatingActionButton = findViewById(R.id.fab)
 
+        // Late inits
         queue = Volley.newRequestQueue(this)
         httpClient = HTTPClient(this.baseUrl, this.queue)
-//        volumeController = VolumeController(httpClient, volumeModel, CustomErrorListener())
-//        volumeController.sync()
+
+        // Set up Volume ViewModel
         volumeViewModel = VolumeViewModel(httpClient, CustomErrorListener())
 
+        // Add live data observers
         volumeViewModel.getCurrentVolume().observe(this, { newVolume: Int ->
             Log.d("volumeObserver", "newVolume: ".plus(newVolume))
             seekBarVolume.progress = newVolume
@@ -49,20 +60,14 @@ class MainActivity : AppCompatActivity() {
             muteSwitch.isChecked = newMute
         })
 
-        setContentView(R.layout.activity_main)
-        val sectionsPagerAdapter = SectionsPagerAdapter(this, supportFragmentManager)
-        // val viewPager: ViewPager = findViewById(R.id.view_pager)
-        // viewPager.adapter = sectionsPagerAdapter
-        val tabs: TabLayout = findViewById(R.id.tabs)
-        // tabs.setupWithViewPager(viewPager)
-        val fab: FloatingActionButton = findViewById(R.id.fab)
 
+        // Event listeners
         fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show()
         }
 
-        muteSwitch.setOnCheckedChangeListener { _, isChecked ->  volumeViewModel.setMute(isChecked)}
+        muteSwitch.setOnCheckedChangeListener { _, isChecked -> volumeViewModel.setMute(isChecked) }
 
         seekBarVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             private var isTracking: Boolean = false
@@ -87,6 +92,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    /** Add custom action to volume keys */
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         Log.d("onKeyUp", keyCode.toString())
 
@@ -103,6 +109,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Add custom action to volume keys */
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> {
@@ -116,24 +123,9 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun getCurrentSeekBarValue(): Int {
-        return seekBarVolume.progress
-    }
-
-    private fun setSeekBarValue(newValue: Int) {
-        var newVolume: Int = newValue;
-
-        // make sure newValue is between 0 and 100
-        if (newVolume > 100) {
-            newVolume = 100
-        } else if (newVolume < 0) {
-            newVolume = 0
-        }
-        // Update seekbar value
-        seekBarVolume.progress = newVolume
-    }
-
-
+    /** This error listener is used for the HTTP requests
+     * It parses the error message out of the error and displays it on a textView for now
+     * */
     inner class CustomErrorListener : Response.ErrorListener {
         /** This listener handles the HTTP errors in the context of the main activity */
         private fun parseVolleyError(error: VolleyError) {

@@ -9,9 +9,17 @@ import org.json.JSONObject
 
 class HTTPClient(private val baseUrl: String, private val queue: RequestQueue) {
 
+    /** A generic function that makes a GET request ot the specified resource URL */
     fun get(
+        /** The URL to the required resource. Will be appeneded to the baseURL that is passed in the constructor.
+         * Make sure that that this resource URL does NOT start with a slash '/'
+         * */
         resourceUrl: String,
+
+        /** The response handler - pass null if you don't want to handle the response. In that case it will be simply logged as a debug message to the logcat. */
         responseListener: Response.Listener<org.json.JSONObject>?,
+
+        /** The error handler - pass null if you don't want to handle the errors. */
         errorListener: Response.ErrorListener?
     ) {
         val url: String = baseUrl.plus(resourceUrl)
@@ -34,9 +42,18 @@ class HTTPClient(private val baseUrl: String, private val queue: RequestQueue) {
 
 
     fun post(
+        /** The URL to the required resource. Will be appeneded to the baseURL that is passed in the constructor.
+         * Make sure that that this resource URL does NOT start with a slash '/'
+         * */
         resourceUrl: String,
+
+        /** The JSON body of the request. Pass null if you don't want to pass a body. */
         jsonObject: JSONObject?,
+
+        /** The response handler - pass null if you don't want to handle the response. In that case it will be simply logged as a debug message to the logcat. */
         responseListener: Response.Listener<org.json.JSONObject>?,
+
+        /** The error handler - pass null if you don't want to handle the errors. */
         errorListener: Response.ErrorListener?
     ) {
         val url: String = baseUrl.plus(resourceUrl)
