@@ -32,21 +32,23 @@ class VolumeViewModel(
         sync()
     }
 
+    /** Returns the LiveData object wrapping the volume value */
     fun getCurrentVolume(): LiveData<Int> {
         return currentVolume
     }
 
+    /** Returns the LiveData object wrapping the mute value */
     fun getCurrentMute(): LiveData<Boolean> {
         return currentMute
     }
 
     /** Syncs the volume model by fetching the latest data from the network*/
-    fun sync() {
+    private fun sync() {
         fetchMute()
         fetchVolume()
     }
 
-    fun fetchVolume()  {
+    private fun fetchVolume()  {
         Log.d("fetchVolume ", volumeLevelUrl)
         httpClient.get(
             volumeLevelUrl,
@@ -59,6 +61,7 @@ class VolumeViewModel(
     }
 
 
+    /** Attempts to POST the server and set a new volume value on the computer */
     fun setVolume(newVolume: Int) {
         Log.d("setVolume URL: ", volumeLevelUrl)
         val jsonBody = JSONObject()
@@ -71,7 +74,7 @@ class VolumeViewModel(
         }, errorListener)
     }
 
-    fun fetchMute() {
+    private fun fetchMute() {
         Log.d("fetchMute ", muteUrl)
         httpClient.get(
             muteUrl,
@@ -83,6 +86,7 @@ class VolumeViewModel(
         )
     }
 
+    /** Attempts to POST the server and set a new mute value on the computer */
     fun setMute(newMute: Boolean) {
         Log.d("setMute URL: ", muteUrl)
         val jsonBody = JSONObject()
@@ -102,6 +106,7 @@ class VolumeViewModel(
         setMute(newMute)
     }
 
+    /** Attempts to POST the server and increase the current volume value by a specific offset, which defaults to 10. */
     fun increaseVolume(offset: Int = 10, tensOnly: Boolean = true) {
         var oldValue = currentVolume.value
 
@@ -121,6 +126,7 @@ class VolumeViewModel(
         setVolume(newValue)
     }
 
+    /** Attempts to POST the server and decrease the current volume value by a specific offset, which defaults to 10. */
     fun decreaseVolume(offset: Int = 10, tensOnly: Boolean = true) {
         var oldValue = currentVolume.value
 
