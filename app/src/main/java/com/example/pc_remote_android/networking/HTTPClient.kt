@@ -9,7 +9,7 @@ import org.json.JSONObject
 
 class HTTPClient(private val baseUrl: String, private val queue: RequestQueue) {
 
-    /** A generic function that makes a GET request ot the specified resource URL */
+    /** A generic function that makes a GET request to the specified resource URL */
     fun get(
         /** The URL to the required resource. Will be appeneded to the baseURL that is passed in the constructor.
          * Make sure that that this resource URL does NOT start with a slash '/'
@@ -40,7 +40,7 @@ class HTTPClient(private val baseUrl: String, private val queue: RequestQueue) {
         queue.add(getRequest)
     }
 
-
+    /** A generic function that makes a POST request to the specified resource URL. Optionally takes posts a JSON body. */
     fun post(
         /** The URL to the required resource. Will be appeneded to the baseURL that is passed in the constructor.
          * Make sure that that this resource URL does NOT start with a slash '/'
